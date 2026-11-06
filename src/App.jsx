@@ -2,7 +2,14 @@ import React,{useEffect,useMemo,useState} from 'react';
 import {Search,Gavel,Heart,Clock3,Plus,UserRound,SlidersHorizontal,ChevronRight,ArrowLeft,Camera,Menu,X,Sun,Moon,LogOut,Package,History,CheckCircle2} from 'lucide-react';
 import {supabase} from './supabase';
 
-const cats=['Cocina','Sala de estar','Taller, oficina y calle'];
+const cats = [
+  'Gute Form (Alemania)',
+  'Bel Design (Italia)',
+  'Good Design (EE. UU.)',
+  'Diseño Nórdico',
+  'Posmodernismo (Italia)',
+  'Diseño Argentino'
+];
 
 
 
@@ -44,12 +51,17 @@ const remaining=t=>{let d=Math.max(0,t-Date.now()),h=Math.floor(d/3600000),m=Mat
 function App(){const [auctions,setAuctions]=useState(()=>{try{return JSON.parse(localStorage.getItem('pujaya-catalog-1945-70'))||seed}catch{return seed}});const [page,setPage]=useState('home'),[selected,setSelected]=useState(null),[query,setQuery]=useState(''),[category,setCategory]=useState('Todas'),[sort,setSort]=useState('new'),[filter,setFilter]=useState('Todas'),[dark,setDark]=useState(false),[user,setUser]=useState(()=>localStorage.getItem('pujaya-user')||''),[toast,setToast]=useState(''),[favorites,setFavorites]=useState([]),[bids,setBids]=useState([]),[mobile,setMobile]=useState(false);
 useEffect(()=>{localStorage.setItem('pujaya-catalog-1945-70',JSON.stringify(auctions))},[auctions]);
 useEffect(() => {
-  setAuctions(current =>
-    current.map(a => {
+  setAuctions(current => {
+    // 1) actualizá imágenes de los existentes
+    const merged = current.map(a => {
       const updated = seed.find(item => item.id === a.id);
       return updated ? { ...a, image: updated.image } : a;
-    })
-  );
+    });
+    // 2) agregá los lotes del seed que falten en localStorage
+    const existingIds = new Set(merged.map(a => a.id));
+    const missing = seed.filter(s => !existingIds.has(s.id));
+    return [...merged, ...missing].sort((a, b) => a.id - b.id);
+  });
 }, []);
 useEffect(()=>{if(toast){let t=setTimeout(()=>setToast(''),2800);return()=>clearTimeout(t)}},[toast]);
 useEffect(()=>{const t=setInterval(()=>setAuctions(a=>a.map(x=>x.status==='Activa'&&x.ends<=Date.now()?{...x,status:'Finalizada'}:x)),1000);return()=>clearInterval(t)},[]);
@@ -61,11 +73,11 @@ function create(data){setAuctions(a=>[{...data,id:Date.now(),seller:user||'Usuar
 const nav=(p)=>{setPage(p);setMobile(false);window.scrollTo(0,0)};
 return <div className={dark?'app dark':'app'}>
 <header className="top"><div className="nav wrap"><button className="brand" onClick={()=>nav('home')}><span className="brandmark"><Gavel size={20}/></span>Puja<span>Ya</span></button><nav className={mobile?'navlinks show':'navlinks'}><button onClick={()=>nav('list')}>Explorar</button><button onClick={()=>nav('create')}>Vender</button><button onClick={()=>nav('account')}>Mi cuenta</button></nav><div className="navright"><button className="iconbtn" onClick={()=>setDark(!dark)} aria-label="Cambiar tema">{dark?<Sun size={18}/>:<Moon size={18}/>}</button>{user?<button className="userpill" onClick={()=>nav('account')}><UserRound size={16}/>{user}</button>:<button className="loginbtn" onClick={()=>nav('login')}>Ingresar</button>}<button className="iconbtn mobilemenu" onClick={()=>setMobile(!mobile)}>{mobile?<X/>:<Menu/>}</button></div></div></header>
-{page==='home'&&<><section className="hero"><div className="wrap heroGrid"><div><div className="eyebrow"><span/> EL OBJETO COTIDIANO COMO MANIFIESTO · 1945–1970</div><h1>Dieciocho objetos.<br/><em>Dieciocho manifiestos.</em></h1><p>Un recorrido por el diseño industrial de posguerra: tecnología, cultura material y vida cotidiana.</p><div className="searchbar"><Search size={20}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscá un objeto, diseñador o material…"/><button onClick={()=>nav('list')}>Buscar</button></div><div className="heroMeta"><span><CheckCircle2 size={15}/> 18 lotes de colección</span><span><CheckCircle2 size={15}/> Tres salas temáticas</span></div></div><div className="heroArt">
+{page==='home'&&<><section className="hero"><div className="wrap heroGrid"><div><div className="eyebrow"><span/> EL OBJETO COTIDIANO COMO MANIFIESTO · 1945–1970</div><h1>Dieciocho objetos.<br/><em>Dieciocho manifiestos.</em></h1><p>Un recorrido por el diseño industrial de posguerra: tecnología, cultura material y vida cotidiana.</p><div className="searchbar"><Search size={20}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Buscá un objeto, diseñador o material…"/><button onClick={()=>nav('list')}>Buscar</button></div><div className="heroMeta"><span><CheckCircle2 size={15}/> 18 lotes de colección</span><span><CheckCircle2 size={15}/>  Salas temáticas</span></div></div><div className="heroArt">
   <div className="heroCircle"/>
   <img src="https://content.gnoss.ws/bm/imagenes/Documentos/imgsem/2a/2adc/2adc9658-ab05-4acb-9439-f543689251c1/94dedfc9-5024-4c17-89dc-924cc4ef6ea4_832.jpg"/>
   <div className="floatTag"><small>OFERTA ACTUAL</small><b>$ 12.000</b></div></div></div></section>
-<main className="wrap main"><section className="section"><div className="sectionHead"><div><div className="eyebrow muted">RECORRIDO POR EL CATÁLOGO</div><h2>Recorré las tres salas</h2></div><button className="textlink" onClick={()=>{setCategory('Todas');nav('list')}}>Ver todas <ChevronRight size={16}/></button></div><div className="catgrid">{cats.map((c,i)=><button className="cat" onClick={()=>{setCategory(c);nav('list')}} key={c}><span className={'catIcon c'+i}>{['⌘','⌂','◈','✦','◇','↗'][i]}</span><b>{c}</b><small>Explorar <ChevronRight size={12}/></small></button>)}</div></section>
+<main className="wrap main"><section className="section"><div className="sectionHead"><div><div className="eyebrow muted">RECORRIDO POR EL CATÁLOGO</div><h2>Recorré las salas</h2></div><button className="textlink" onClick={()=>{setCategory('Todas');nav('list')}}>Ver todas <ChevronRight size={16}/></button></div><div className="catgrid">{cats.map((c,i)=><button className="cat" onClick={()=>{setCategory(c);nav('list')}} key={c}><span className={'catIcon c'+i}>{['⌘','⌂','◈','✦','◇','↗'][i]}</span><b>{c}</b><small>Explorar <ChevronRight size={12}/></small></button>)}</div></section>
 <section className="section"><div className="sectionHead"><div><div className="eyebrow muted">OBJETOS DEL CATÁLOGO</div><h2>Lotes destacados</h2></div><button className="textlink" onClick={()=>nav('list')}>Ver todas <ChevronRight size={16}/></button></div><div className="cards">{auctions.slice(0,4).map(a=><AuctionCard key={a.id} a={a} open={open} fav={favorites.includes(a.id)} toggle={()=>setFavorites(f=>f.includes(a.id)?f.filter(x=>x!==a.id):[...f,a.id])}/>)}</div></section>
 <section className="ending"><div><div className="eyebrow">UNA MIRADA AL CATÁLOGO</div><h2>Próximos cierres</h2><p>Explorá los lotes con cierre más cercano y participá de la subasta demo.</p></div><button className="lightBtn" onClick={()=>{setSort('ending');nav('list')}}>Ver subastas <ChevronRight size={16}/></button><div className="endingCards">{[...auctions].filter(a=>a.status==='Activa').sort((a,b)=>a.ends-b.ends).slice(0,3).map(a=><button className="endingItem" key={a.id} onClick={()=>open(a)}><img src={a.image}/><span><b>{a.title}</b><strong>{money(a.price)}</strong><small><Clock3 size={12}/> {remaining(a.ends)}</small></span></button>)}</div></section>
 </main></>}
